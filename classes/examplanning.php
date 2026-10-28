@@ -21,6 +21,8 @@ use admin_setting_heading;
 use admin_settingpage;
 use mod_booking\plugininfo\bookingextension;
 use mod_booking\plugininfo\bookingextension_interface;
+use bookingextension_examplanning\local\planned_options;
+use bookingextension_examplanning\local\planning_access;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -130,5 +132,29 @@ class examplanning extends bookingextension implements bookingextension_interfac
      */
     public static function set_template_data_for_optionview(object $settings): array {
         return [];
+    }
+
+    /**
+     * Link to the assignment page in the menu of a planned option, for whoever may plan its exams.
+     *
+     * @param object $settings
+     * @param mixed $context
+     * @return string
+     */
+    public static function add_options_to_col_actions(object $settings, mixed $context): string {
+        global $OUTPUT;
+
+        $optionid = (int)($settings->id ?? 0);
+        if (!self::is_globally_enabled() || !planned_options::is_planned($optionid) || !planning_access::can_plan($optionid)) {
+            return '';
+        }
+        $url = new \moodle_url('/mod/booking/bookingextension/examplanning/assign.php', [
+            'id' => (int)$settings->cmid,
+            'optionid' => $optionid,
+        ]);
+        return '<div class="dropdown-item">' . \html_writer::link(
+            $url,
+            $OUTPUT->pix_icon('i/users', '') . get_string('assign_link', 'bookingextension_examplanning')
+        ) . '</div>';
     }
 }

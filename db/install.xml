@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/booking/bookingextension/examplanning/db" VERSION="2026102800" COMMENT="XMLDB file for bookingextension_examplanning"
+<XMLDB PATH="mod/booking/bookingextension/examplanning/db" VERSION="2026102803" COMMENT="XMLDB file for bookingextension_examplanning"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../../../lib/xmldb/xmldb.xsd"
 >
@@ -15,6 +15,66 @@
                 <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
                 <KEY NAME="optionid_fk" TYPE="foreign-unique" FIELDS="optionid" REFTABLE="booking_options" REFFIELDS="id"/>
             </KEYS>
+        </TABLE>
+        <TABLE NAME="bookingextension_examplanning_source" COMMENT="Where the clerks of a planned option come from: pools or single entities.">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="optionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The booking option"/>
+                <FIELD NAME="sourcetype" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="pool or entity"/>
+                <FIELD NAME="sourceid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Id of the pool or of the entity in local_entities"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="optionid_fk" TYPE="foreign" FIELDS="optionid" REFTABLE="booking_options" REFFIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="option_source_uix" UNIQUE="true" FIELDS="optionid, sourcetype, sourceid"/>
+            </INDEXES>
+        </TABLE>
+        <TABLE NAME="bookingextension_examplanning_assign" COMMENT="The clerk assigned to a participant of a planned option, without a date.">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="optionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The booking option"/>
+                <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The participant who is examined"/>
+                <FIELD NAME="clerkentityid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The person in local_entities who is the clerk"/>
+                <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Who made the assignment"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="optionid_fk" TYPE="foreign" FIELDS="optionid" REFTABLE="booking_options" REFFIELDS="id"/>
+                <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="option_user_uix" UNIQUE="true" FIELDS="optionid, userid"/>
+                <INDEX NAME="clerk_ix" UNIQUE="false" FIELDS="clerkentityid"/>
+            </INDEXES>
+        </TABLE>
+        <TABLE NAME="bookingextension_examplanning_staff" COMMENT="Who is examiner and who is clerk at a booked exam.">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="optionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The booking option"/>
+                <FIELD NAME="answerid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="The booking of the participant"/>
+                <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The participant who is examined"/>
+                <FIELD NAME="entityid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The person in local_entities"/>
+                <FIELD NAME="role" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="examiner or clerk"/>
+                <FIELD NAME="slotstart" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="slotend" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="runid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="The plan that booked it"/>
+                <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="optionid_fk" TYPE="foreign" FIELDS="optionid" REFTABLE="booking_options" REFFIELDS="id"/>
+                <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="entity_time_ix" UNIQUE="false" FIELDS="entityid, slotstart"/>
+                <INDEX NAME="answer_ix" UNIQUE="false" FIELDS="answerid"/>
+                <INDEX NAME="run_ix" UNIQUE="false" FIELDS="runid"/>
+            </INDEXES>
         </TABLE>
     </TABLES>
 </XMLDB>

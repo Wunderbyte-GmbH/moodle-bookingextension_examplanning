@@ -92,6 +92,23 @@ final class examiner {
     }
 
     /**
+     * The persons of the trainers of an option that exist already, without creating any.
+     *
+     * @param int $optionid
+     * @return int[] user id => entity id
+     */
+    public static function existing_entityids(int $optionid): array {
+        $entityids = [];
+        foreach (self::trainer_userids($optionid) as $userid) {
+            $entityid = persons::get_entityid_for_user($userid);
+            if ($entityid !== null) {
+                $entityids[$userid] = $entityid;
+            }
+        }
+        return $entityids;
+    }
+
+    /**
      * Creates the persons of all trainers of an option that have none yet.
      *
      * @param int $optionid
