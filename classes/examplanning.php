@@ -23,6 +23,7 @@ use mod_booking\plugininfo\bookingextension;
 use mod_booking\plugininfo\bookingextension_interface;
 use bookingextension_examplanning\local\planned_options;
 use bookingextension_examplanning\local\planning_access;
+use bookingextension_examplanning\local\occupations;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -131,7 +132,41 @@ class examplanning extends bookingextension implements bookingextension_interfac
      * @return array
      */
     public static function set_template_data_for_optionview(object $settings): array {
-        return [];
+        global $DB, $USER;
+
+        $optionid = (int)($settings->id ?? 0);
+        if (!self::is_globally_enabled() || !planned_options::is_planned($optionid) || empty($USER->id)) {
+            return [];
+        }
+        // Only a booked exam is shown, a draft plan is not (IQ18).
+        $staff = $DB->get_records_select(
+            occupations::TABLE,
+            'optionid = :optionid AND userid = :userid AND answerid IS NOT NULL AND timecancelled IS NULL',
+            ['optionid' => $optionid, 'userid' => (int)$USER->id]
+        );
+        if (!$staff) {
+            return [];
+        }
+
+        $names = ['examiner' => '', 'clerk' => ''];
+        foreach ($staff as $row) {
+            $entity = $DB->get_record('local_entities', ['id' => $row->entityid]);
+            $names[$row->role] = $entity ? \local_entities\entities::get_display_name($entity) : '';
+        }
+        $row = reset($staff);
+        $time = userdate((int)$row->slotstart, get_string('strftimedatetimeshort', 'langconfig')) . '–'
+            . userdate((int)$row->slotend, get_string('strftimetime', 'langconfig'));
+
+        return [[
+            'key' => 'examplanning-myexam',
+            'label' => 'examplanning',
+            'description' => get_string('myexam', 'bookingextension_examplanning'),
+            'value' => s(get_string('myexam_text', 'bookingextension_examplanning', (object)[
+                'time' => $time,
+                'examiner' => $names['examiner'],
+                'clerk' => $names['clerk'],
+            ])),
+        ]];
     }
 
     /**

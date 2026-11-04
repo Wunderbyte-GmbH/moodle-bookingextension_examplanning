@@ -29,4 +29,8 @@ $observers = [
         'eventname' => '\mod_booking\event\teacher_added',
         'callback' => '\bookingextension_examplanning\observer::teacher_added',
     ],
+    [
+        'eventname' => '\mod_booking\event\bookinganswer_cancelled',
+        'callback' => '\bookingextension_examplanning\observer::bookinganswer_cancelled',
+    ],
 ];

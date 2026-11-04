@@ -62,6 +62,8 @@
                 <FIELD NAME="slotstart" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
                 <FIELD NAME="slotend" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
                 <FIELD NAME="runid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="The plan that booked it"/>
+                <FIELD NAME="timecancelled" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="When the booking was cancelled, null while it is booked"/>
+                <FIELD NAME="enrolled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 if the extension enrolled the clerk in the course for this exam"/>
                 <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
                 <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
             </FIELDS>
@@ -74,6 +76,45 @@
                 <INDEX NAME="entity_time_ix" UNIQUE="false" FIELDS="entityid, slotstart"/>
                 <INDEX NAME="answer_ix" UNIQUE="false" FIELDS="answerid"/>
                 <INDEX NAME="run_ix" UNIQUE="false" FIELDS="runid"/>
+            </INDEXES>
+        </TABLE>
+                <TABLE NAME="bookingextension_examplanning_plan" COMMENT="A run of the distribution of an option, before it is booked.">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="optionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The booking option"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="queued, running, ready, failed, confirming, booked"/>
+                <FIELD NAME="seed" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Null for the plain order, a number for a shuffle"/>
+                <FIELD NAME="error" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Why the run failed"/>
+                <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Who started the run"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="optionid_fk" TYPE="foreign" FIELDS="optionid" REFTABLE="booking_options" REFFIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="option_status_ix" UNIQUE="false" FIELDS="optionid, status"/>
+            </INDEXES>
+        </TABLE>
+        <TABLE NAME="bookingextension_examplanning_plan_item" COMMENT="A participant in a run: the slot, or why there is none.">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="planid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The run"/>
+                <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The participant"/>
+                <FIELD NAME="examinerentityid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="clerkentityid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="slotstart" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Null if the participant could not be planned"/>
+                <FIELD NAME="slotend" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="reasons" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON: why there is no slot"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="planid_fk" TYPE="foreign" FIELDS="planid" REFTABLE="bookingextension_examplanning_plan" REFFIELDS="id"/>
+                <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="plan_user_uix" UNIQUE="true" FIELDS="planid, userid"/>
             </INDEXES>
         </TABLE>
     </TABLES>

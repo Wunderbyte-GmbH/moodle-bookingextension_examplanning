@@ -31,6 +31,11 @@ use bookingextension_examplanning\local\examiner;
 use bookingextension_examplanning\local\participants;
 use bookingextension_examplanning\local\planned_options;
 use bookingextension_examplanning\local\planning_access;
+use bookingextension_examplanning\local\plan_store;
+use bookingextension_examplanning\output\plan_section;
+use bookingextension_examplanning\task\compute_plan;
+use bookingextension_examplanning\local\plan_confirmer;
+use bookingextension_examplanning\local\plan_rollback;
 use local_entities\entities;
 
 $cmid = required_param('id', PARAM_INT);
@@ -68,6 +73,42 @@ foreach (clerk_candidates::for_option($optionid) as $entityid) {
 }
 core_collator::asort($candidatenames);
 
+// The buttons Distribute and Shuffle start a run in the background, unless one is already waiting or being computed.
+// Shuffle gets a random seed, which mixes the order of the participants at a tie.
+$action = optional_param('action', '', PARAM_ALPHA);
+if (in_array($action, ['distribute', 'shuffle'], true) && confirm_sesskey()) {
+    $latest = plan_store::latest($optionid);
+    if ($latest === null || !in_array($latest->status, [plan_store::QUEUED, plan_store::RUNNING], true)) {
+        $seed = $action === 'shuffle' ? random_int(1, 2147483647) : null;
+        compute_plan::queue(plan_store::create($optionid, $seed, (int)$USER->id), (int)$USER->id);
+    }
+    redirect($url);
+}
+
+// The button Confirm books the draft plan, all or nothing. If it does not work, the page tells why.
+if ($action === 'confirm' && confirm_sesskey()) {
+    $latest = plan_store::latest($optionid);
+    try {
+        $count = plan_confirmer::confirm((int)($latest->id ?? 0), (int)$USER->id);
+        $message = get_string('plan_confirmed', 'bookingextension_examplanning', $count);
+        redirect($url, $message, null, \core\output\notification::NOTIFY_SUCCESS);
+    } catch (moodle_exception $e) {
+        redirect($url, $e->getMessage(), null, \core\output\notification::NOTIFY_ERROR);
+    }
+}
+
+// The button Take back cancels all bookings of the booked plan, only before its first exam.
+if ($action === 'rollback' && confirm_sesskey()) {
+    $latest = plan_store::latest($optionid);
+    try {
+        $count = plan_rollback::rollback((int)($latest->id ?? 0));
+        $message = get_string('rollback_done', 'bookingextension_examplanning', $count);
+        redirect($url, $message, null, \core\output\notification::NOTIFY_SUCCESS);
+    } catch (moodle_exception $e) {
+        redirect($url, $e->getMessage(), null, \core\output\notification::NOTIFY_ERROR);
+    }
+}
+
 $form = new assign_form($url, [
     'id' => $cmid,
     'optionid' => $optionid,
@@ -96,4 +137,9 @@ echo $OUTPUT->heading(get_string('assign_title', 'bookingextension_examplanning'
 echo html_writer::tag('p', html_writer::link($optionurl, format_string($settings->get_title_with_prefix())));
 echo html_writer::tag('p', get_string('assign_intro', 'bookingextension_examplanning'), ['class' => 'text-muted']);
 $form->display();
+echo $OUTPUT->render_from_template(
+    'bookingextension_examplanning/plan_section',
+    (new plan_section($optionid, $url))->export_for_template($OUTPUT)
+);
+$PAGE->requires->js_call_amd('bookingextension_examplanning/plan_section', 'init');
 echo $OUTPUT->footer();

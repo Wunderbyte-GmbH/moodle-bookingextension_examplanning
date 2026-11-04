@@ -113,7 +113,7 @@ final class provider_test extends provider_testcase {
         provider::export_user_data($contextlist);
 
         $data = writer::with_context($this->context)->get_data([get_string('pluginname', 'bookingextension_examplanning')]);
-        $this->assertCount(1, $data->assignments);
+        $this->assertCount(1, $data->bookingextension_examplanning_assign);
     }
 
     /**

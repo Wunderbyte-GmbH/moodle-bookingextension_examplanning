@@ -98,5 +98,66 @@ function xmldb_bookingextension_examplanning_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026102804, 'bookingextension', 'examplanning');
     }
 
+    if ($oldversion < 2026110300) {
+        // A run of the distribution of an option, before it is booked.
+        $table = new xmldb_table('bookingextension_examplanning_plan');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('optionid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('status', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('seed', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('error', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('usermodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('optionid_fk', XMLDB_KEY_FOREIGN, ['optionid'], 'booking_options', ['id']);
+        $table->add_index('option_status_ix', XMLDB_INDEX_NOTUNIQUE, ['optionid', 'status']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // A participant in a run: the slot, or why there is none.
+        $table = new xmldb_table('bookingextension_examplanning_plan_item');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('planid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('examinerentityid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('clerkentityid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('slotstart', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('slotend', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('reasons', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('planid_fk', XMLDB_KEY_FOREIGN, ['planid'], 'bookingextension_examplanning_plan', ['id']);
+        $table->add_key('userid_fk', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+        $table->add_index('plan_user_uix', XMLDB_INDEX_UNIQUE, ['planid', 'userid']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2026110300, 'bookingextension', 'examplanning');
+    }
+
+    if ($oldversion < 2026110303) {
+        // When the booking of an exam was cancelled. The row stays, so a rule on the cancellation finds the clerk.
+        $table = new xmldb_table('bookingextension_examplanning_staff');
+        $field = new xmldb_field('timecancelled', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'runid');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026110303, 'bookingextension', 'examplanning');
+    }
+
+    if ($oldversion < 2026110400) {
+        // Whether the extension enrolled the clerk in the course, so a cancellation only unenrols whom it enrolled.
+        $table = new xmldb_table('bookingextension_examplanning_staff');
+        $field = new xmldb_field('enrolled', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'timecancelled');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026110400, 'bookingextension', 'examplanning');
+    }
+
     return true;
 }

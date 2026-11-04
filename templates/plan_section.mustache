@@ -1,0 +1,172 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template bookingextension_examplanning/plan_section
+
+    The distribution on the page of the exam planning: the button, the state of the newest run and its draft plan.
+
+    Context variables required for this template:
+    * actionurl - where the button sends to
+    * sesskey
+    * busy - a run is queued or being computed
+    * queued, running - which of the two
+    * error - why the newest run failed, empty if it did not
+    * hasplan - there is a computed or booked run
+    * editable - the run is computed, not booked: it can be changed and confirmed
+    * booked - the run is booked
+    * planid - id of the computed run
+    * computed - when it was computed
+    * planned - [{userid, time, participant, clerk}]
+    * unplanned - [{participant, reasons: [text]}]
+
+    Example context (json):
+    {
+        "actionurl": "https://example.com/assign.php",
+        "sesskey": "abc",
+        "busy": false,
+        "hasplan": true,
+        "editable": true,
+        "booked": false,
+        "planid": 5,
+        "computed": "Tuesday, 3 November 2026, 10:15",
+        "planned": [{"userid": 7, "time": "Tue, 17.11.2026 09:00–09:30", "participant": "Jacob Demo", "clerk": "Billy Teachy"}],
+        "unplanned": [{"participant": "Georg Demo", "reasons": ["No clerk is assigned."]}]
+    }
+}}
+<div class="bookingextension-examplanning-plan mt-5" data-region="plan-section" {{#busy}}data-busy="1"{{/busy}}
+    {{#hasplan}}data-planid="{{planid}}"{{/hasplan}}>
+    <h3>{{#str}} plan_heading, bookingextension_examplanning {{/str}}</h3>
+    {{^booked}}
+    <form method="post" action="{{actionurl}}" class="mb-3">
+        <input type="hidden" name="sesskey" value="{{sesskey}}">
+        <button type="submit" name="action" value="distribute" class="btn btn-primary" {{#busy}}disabled{{/busy}}
+            title="{{#str}} plan_distribute_help, bookingextension_examplanning {{/str}}">
+            {{#str}} plan_distribute, bookingextension_examplanning {{/str}}
+        </button>
+        {{#hasplan}}
+        <button type="submit" name="action" value="shuffle" class="btn btn-secondary ml-2 ms-2" {{#busy}}disabled{{/busy}}
+            title="{{#str}} plan_shuffle_help, bookingextension_examplanning {{/str}}">
+            {{#str}} plan_shuffle, bookingextension_examplanning {{/str}}
+        </button>
+        {{/hasplan}}
+        <p class="text-muted small mt-2 mb-0">{{#str}} plan_distribute_help, bookingextension_examplanning {{/str}}</p>
+    </form>
+    {{/booked}}
+
+    {{#queued}}
+        <div class="alert alert-info">{{#str}} plan_queued, bookingextension_examplanning {{/str}}</div>
+    {{/queued}}
+    {{#running}}
+        <div class="alert alert-info">{{#str}} plan_running, bookingextension_examplanning {{/str}}</div>
+    {{/running}}
+    {{#error}}
+        <div class="alert alert-danger">{{#str}} plan_failed, bookingextension_examplanning, {{error}} {{/str}}</div>
+    {{/error}}
+
+    {{#hasplan}}
+        {{#editable}}
+        <h4 class="mt-4">{{#str}} plan_computed, bookingextension_examplanning, {{computed}} {{/str}}</h4>
+        {{/editable}}
+        {{#booked}}
+        <h4 class="mt-4">{{#str}} plan_booked, bookingextension_examplanning, {{computed}} {{/str}}</h4>
+        {{/booked}}
+        {{#planned.0}}
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">{{#str}} plan_time, bookingextension_examplanning {{/str}}</th>
+                    <th scope="col">{{#str}} plan_participant, bookingextension_examplanning {{/str}}</th>
+                    <th scope="col">{{#str}} plan_clerk, bookingextension_examplanning {{/str}}</th>
+                    {{#editable}}
+                    <th scope="col"><span class="sr-only visually-hidden">{{#str}} change_actions, bookingextension_examplanning {{/str}}</span></th>
+                    {{/editable}}
+                </tr>
+            </thead>
+            <tbody>
+                {{#planned}}
+                <tr>
+                    <td>{{time}}</td>
+                    <td>{{participant}}</td>
+                    <td>{{clerk}}</td>
+                    {{#editable}}
+                    <td class="text-end text-right">
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                {{#str}} change_actions, bookingextension_examplanning {{/str}}
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right dropdown-menu-end">
+                                <a href="#" class="dropdown-item" data-action="plan-change" data-kind="move"
+                                    data-userid="{{userid}}" data-participant="{{participant}}">
+                                    {{#str}} change_move, bookingextension_examplanning {{/str}}
+                                </a>
+                                <a href="#" class="dropdown-item" data-action="plan-change" data-kind="swap"
+                                    data-userid="{{userid}}" data-participant="{{participant}}">
+                                    {{#str}} change_swap, bookingextension_examplanning {{/str}}
+                                </a>
+                                <a href="#" class="dropdown-item" data-action="plan-change" data-kind="clerk"
+                                    data-userid="{{userid}}" data-participant="{{participant}}">
+                                    {{#str}} change_clerk, bookingextension_examplanning {{/str}}
+                                </a>
+                            </div>
+                        </div>
+                    </td>
+                    {{/editable}}
+                </tr>
+                {{/planned}}
+            </tbody>
+        </table>
+        {{/planned.0}}
+
+        {{#unplanned.0}}
+        <h5 class="mt-3">{{#str}} plan_unplanned, bookingextension_examplanning {{/str}}</h5>
+        <ul>
+            {{#unplanned}}
+            <li><strong>{{participant}}</strong>: {{#reasons}}{{.}} {{/reasons}}</li>
+            {{/unplanned}}
+        </ul>
+        {{/unplanned.0}}
+        {{^unplanned.0}}
+        {{#editable}}
+        <p class="text-success">{{#str}} plan_allplanned, bookingextension_examplanning {{/str}}</p>
+        {{/editable}}
+        {{/unplanned.0}}
+        {{#booked}}
+        <form method="post" action="{{actionurl}}" class="mt-3" data-action="plan-confirm"
+            data-question="{{#str}} rollbackq, bookingextension_examplanning {{/str}}">
+            <input type="hidden" name="sesskey" value="{{sesskey}}">
+            <button type="submit" name="action" value="rollback" class="btn btn-outline-danger">
+                {{#str}} rollback, bookingextension_examplanning {{/str}}
+            </button>
+            <p class="text-muted small mt-2 mb-0">{{#str}} rollback_help, bookingextension_examplanning {{/str}}</p>
+        </form>
+        {{/booked}}
+        {{#editable}}
+        <form method="post" action="{{actionurl}}" class="mt-3" data-action="plan-confirm"
+            data-question="{{#str}} plan_confirmq, bookingextension_examplanning {{/str}}">
+            <input type="hidden" name="sesskey" value="{{sesskey}}">
+            <button type="submit" name="action" value="confirm" class="btn btn-success">
+                {{#str}} plan_confirm, bookingextension_examplanning {{/str}}
+            </button>
+            <p class="text-muted small mt-2 mb-0">{{#str}} plan_confirm_help, bookingextension_examplanning {{/str}}</p>
+        </form>
+        {{/editable}}
+    {{/hasplan}}
+    {{^hasplan}}
+        {{^busy}}<p class="text-muted">{{#str}} plan_none, bookingextension_examplanning {{/str}}</p>{{/busy}}
+    {{/hasplan}}
+</div>

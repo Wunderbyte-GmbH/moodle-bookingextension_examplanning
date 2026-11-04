@@ -42,4 +42,26 @@ class observer {
             persons::get_or_create_for_user($userid);
         }
     }
+
+    /**
+     * A booking was cancelled. The exam of the participant in the option no longer counts, the row stays for the rules.
+     *
+     * @param \mod_booking\event\bookinganswer_cancelled $event
+     * @return void
+     */
+    public static function bookinganswer_cancelled(\mod_booking\event\bookinganswer_cancelled $event): void {
+        global $DB;
+        $userid = (int)$event->relateduserid;
+        if ($userid <= 0) {
+            return;
+        }
+        $DB->set_field_select(
+            \bookingextension_examplanning\local\occupations::TABLE,
+            'timecancelled',
+            time(),
+            'optionid = :optionid AND userid = :userid AND timecancelled IS NULL',
+            ['optionid' => (int)$event->objectid, 'userid' => $userid]
+        );
+        \bookingextension_examplanning\local\clerk_enrolment::release((int)$event->objectid, $userid);
+    }
 }
